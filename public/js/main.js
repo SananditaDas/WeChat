@@ -1,6 +1,7 @@
 const socket = io();
 const chatForm = document.getElementById('chat-form');
-
+const msgArea = document.getElementById('msg');
+const userRegion=document.getElementById('user-region');
 const chatMessages = document.querySelector('.chat-messages');
 
 const {username, room} = Qs.parse(location.search, {
@@ -12,7 +13,7 @@ socket.emit('joinRoom', {username, room});
 
 // message from server
 socket.on('message', message =>{
-  console.log(message);
+  
   outputMessage(message);
 
   //scroll down
@@ -23,6 +24,22 @@ socket.on('message', message =>{
 socket.on('roomUsers', ({room,users}) => {
   outputRoom(room);
   outputUsers(users);
+  userRegion.scrollTop=userRegion.scrollHeight;
+});
+
+
+socket.on('typing-disp', user => {
+  outputUserTyping(user);
+});
+
+
+//typing...
+msgArea.addEventListener('keypress', e => {
+  
+  if(e.key!=="Enter")
+  {
+    socket.emit('typing',socket.id);
+  }
 });
 
 //message submit
@@ -30,7 +47,6 @@ chatForm.addEventListener('submit', e => {
   e.preventDefault();
 
   let msg = e.target.elements.msg.value;
-  //console.log(msg);
   socket.emit('chatMessage', msg);
 
   e.target.elements.msg.value='';
@@ -61,7 +77,18 @@ function outputUsers(users)
   userList.innerHTML = '';
   users.forEach((user) => {
     const li = document.createElement('li');
+    li.setAttribute("id", user.id);
     li.innerText = user.username;
     userList.appendChild(li);
   });
+}
+
+function outputUserTyping(user)
+{
+  const userTyping = document.getElementById(user.id);
+  userTyping.innerText=user.username+" is typing...";
+  setTimeout(()=>{
+    userTyping.innerText=user.username;
+  },1000);
+  
 }

@@ -17,8 +17,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 //run when client connects
 io.on("connection", socket => {
-    //console.log('New connection...');
-
+    
     socket.on('joinRoom', ({username,room}) => {
 
         const user=userJoin(socket.id,username,room);
@@ -36,9 +35,14 @@ io.on("connection", socket => {
    
     //messages
     socket.on('chatMessage',(msg) => {
-        //console.log(msg);
         const user=getCurrentUser(socket.id);
         io.emit('message', formatMessage(user.username, msg));
+    });
+
+    //typing from a particular socket
+    socket.on('typing', (id)=>{
+        const userTyping = getCurrentUser(id);
+        io.emit('typing-disp', userTyping);
     });
 
     socket.on('disconnect', ()=>{
@@ -46,13 +50,13 @@ io.on("connection", socket => {
         if(user)
         {
             io.to(user.room).emit('message', formatMessage(botName, user.username+' has left the room'));
-        }
 
-        //send user and room info for sidebar
-        io.to(user.room).emit('roomUsers', {
-            room: user.room,
-            users: getRoomUsers(user.room)
-        });
+            //send user and room info for sidebar
+            io.to(user.room).emit('roomUsers', {
+                room: user.room,
+                users: getRoomUsers(user.room)
+            });
+        }
 
     });//to all
 
